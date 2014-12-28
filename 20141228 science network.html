@@ -1,0 +1,356 @@
+<!DOCTYPE html>
+<html lang="en"> <head>
+<meta charset="utf-8">
+<title>D3 Page Template</title>
+
+<script type="text/javascript" src="http://d3js.org/d3.v3.min.js"></script>
+
+<style>
+label {
+    font: 12px sans-serif;
+}
+.node circle {
+    fill: #fff;
+    stroke: steelblue;
+    stroke-width: 1.5px;
+}
+.node {
+    font: 10px sans-serif;
+}
+.link {
+    fill: none;
+    stroke: tan;
+    stroke-width: 1.5px;
+}
+
+</style>
+    
+</head>
+
+<body>
+<form>
+  <label><input type="radio" name="mode" value="radialtree">Radial Tree</label>
+  <label><input type="radio" name="mode" value="radialcluster">Radial Cluster</label>
+  <label><input type="radio" name="mode" value="tree">Tree</label>
+  <label><input type="radio" name="mode" value="cluster" checked>Cluster</label>
+</form>
+
+
+
+
+<script type="text/javascript">
+var width = 500,
+    height = 500;
+var diameter = 500;
+var duration = 2000;
+var radius = 12;
+
+// CM ADDED
+var colour = d3.scale.category10();
+
+// x.charAt(0)
+
+d3.selectAll("input").on("change", change);
+
+function change() {
+    if (this.value === "radialtree")
+        transitionToRadialTree();
+    else if (this.value === "radialcluster")
+        transitionToRadialCluster();
+    else if (this.value === "tree")
+        transitionToTree();
+    else
+        transitionToCluster();
+};
+
+function transitionToRadialTree() {
+
+    var nodes = radialTree.nodes(root), // recalculate layout
+        links = radialTree.links(nodes);
+    
+    svg.transition().duration(duration)
+        .attr("transform", "translate(" + (width/2) + "," +
+                                          (height/2) + ")");
+        // set appropriate translation (origin in middle of svg)
+    
+    link.data(links)
+        .transition()
+        .duration(duration)
+        .style("stroke", "#fc8d62")
+        .attr("d", radialDiagonal); //get the new radial path
+
+    node.data(nodes)
+        .transition()
+        .duration(duration)
+        .attr("transform", function(d) {
+            return "rotate(" + (d.x - 90) + ")translate(" + d.y + ")";
+        });
+    
+    node.select("circle")
+        .transition()
+        .duration(duration)
+        .style("stroke", "#984ea3");
+    
+};
+
+function transitionToRadialCluster() {
+
+    var nodes = radialCluster.nodes(root), // recalculate layout
+        links = radialCluster.links(nodes);
+    
+    svg.transition().duration(duration)
+        .attr("transform", "translate(" + (width/2) + "," +
+                                          (height/2) + ")");
+        // set appropriate translation (origin in middle of svg)
+    
+    link.data(links)
+        .transition()
+        .duration(duration)
+        .style("stroke", "#66c2a5")
+        .attr("d", radialDiagonal); //get the new radial path
+
+    node.data(nodes)
+        .transition()
+        .duration(duration)
+        .attr("transform", function(d) {
+            return "rotate(" + (d.x - 90) + ")translate(" + d.y + ")";
+        });
+    
+    node.select("circle")
+        .transition()
+        .duration(duration)
+        .style("stroke", "#4daf4a");
+
+};
+
+function transitionToTree() {
+    
+    var nodes = tree.nodes(root), //recalculate layout
+        links = tree.links(nodes);
+
+    svg.transition().duration(duration)
+        .attr("transform", "translate(40,0)");
+        
+    link.data(links)
+        .transition()
+        .duration(duration)
+        .style("stroke", "#e78ac3")
+        .attr("d", diagonal); // get the new tree path
+
+    node.data(nodes)
+        .transition()
+        .duration(duration)
+        .attr("transform", function (d) {
+            return "translate(" + d.y + "," + d.x + ")";
+        });
+    
+    node.select("circle")
+        .transition()
+        .duration(duration)
+        .style("stroke", "#377eb8");
+};
+
+function transitionToCluster() {
+    
+    var nodes = cluster.nodes(root), //recalculate layout
+        links = cluster.links(nodes);
+    
+    svg.transition().duration(duration)
+        .attr("transform", "translate(40,0)");
+  
+    link.data(links)
+        .transition()
+        .duration(duration)
+        .style("stroke", "#8da0cb")
+        .attr("d", diagonal); //get the new cluster path
+
+    node.data(nodes)
+        .transition()
+        .duration(duration)
+        .attr("transform", function (d) {
+            return "translate(" + d.y + "," + d.x + ")";
+        });
+    
+    node.select("circle")
+        .transition()
+        .duration(duration)
+        .style("stroke", "#e41a1c");
+};
+
+var root; // store data in a variable accessible by all functions
+
+var tree = d3.layout.tree()
+    .size([height, width - 160]);
+
+var cluster = d3.layout.cluster()
+    .size([height, width - 160]);
+
+var diagonal = d3.svg.diagonal()
+    .projection(function (d) {
+    return [d.y, d.x];
+});
+
+var radialTree = d3.layout.tree()
+    .size([360, diameter / 2 ])   // / 2  increase number to make smaller
+    .separation(function(a, b) {
+        return (a.parent == b.parent ? 1 : 2) / a.depth;
+    });
+
+var radialCluster = d3.layout.cluster()
+    .size([360, diameter / 3 ])
+    .separation(function(a, b) {
+        return (a.parent == b.parent ? 1 : 2) / a.depth;
+    });
+
+var radialDiagonal = d3.svg.diagonal.radial()
+    .projection(function(d) {
+        return [d.y, d.x / 180 * Math.PI];
+    });
+
+
+// Layout on open
+
+var svg = d3.select("body").append("svg")
+    .attr("width", width)
+    .attr("height", height)
+    .append("g")
+    .attr("transform", "translate(40,0)");
+
+    var root = getData(),
+        nodes = cluster.nodes(root),
+        links = cluster.links(nodes);
+
+    var link = svg.selectAll(".link")
+        .data(links)
+       .enter()
+        .append("path")
+        .attr("class", "link")
+//        .style("stroke", "#8da0cb")
+        .style("stroke", function (d) { 
+            return colour((d.target.name).charAt(0));
+        })
+        .attr("d", diagonal);
+
+    // added by CM - fade in effect on open
+      link.style("opacity", 0)
+      .transition()
+      .duration(duration)
+      .delay(function(d,i) {
+        return 1*i;
+      })
+      .style("opacity", 1);
+
+    var node = svg.selectAll(".node")
+        .data(nodes)
+       .enter()
+        .append("g")
+        .attr("class", "node")
+        .attr("transform", function (d) {
+        return "translate(" + d.y + "," + d.x + ")";
+        })
+
+    node.append("circle")
+        .attr("r", radius)
+//        .style("stroke", "#e41a1c")
+        .style("stroke", function (d) { 
+            return colour((d.name).charAt(0));
+        })
+    ;
+    
+        node.append("image")
+//      .attr("xlink:href", "https://github.com/favicon.ico")
+      .attr("xlink:href", function(d) {return d.icon;})
+      .attr("x", -8)
+      .attr("y", -8)
+      .attr("width", 16)
+      .attr("height", 16);
+    
+      // added by CM - fade in effect on open
+      node.style("opacity", 0)
+      .transition()
+      .duration(duration)
+      .delay(function(d,i) {
+        return 1*i;
+      })
+      .style("opacity", 1);
+
+    node.append("text")
+        .attr("dx", function (d) { return d.children ? -15 : 15; })
+        .attr("dy", 3)
+        .style("text-anchor", function (d) { return d.children ? "end" : "start"; })
+        .text(function (d) { return d.title; });
+
+
+
+////////////////// DATA
+function getData() {
+
+    var data = [
+{ 'name': '_', 'title': 'Science'}
+,{ 'name': '0', 'title': 'Natural', 'father': '_'}
+,{ 'name': '1', 'title': 'Social', 'father': '_'}
+,{ 'name': '2', 'title': 'Formal', 'father': '_'}
+
+// Natural Sciences
+,{ 'name': '00', 'title': 'Physical', 'father': '0'}
+,{ 'name': '01', 'title': 'Life', 'father': '0'}
+
+,{ 'name': '001', 'title': 'Physics', 'father': '00', 'icon':'physics.png'}
+,{ 'name': '002', 'title': 'Chemistry', 'father': '00', 'icon':'chemistry.png'}
+,{ 'name': '002', 'title': 'Earth', 'father': '00', 'icon':'earth.png'}
+        
+,{ 'name': '0021', 'title': 'Ecology', 'father': '002'}
+,{ 'name': '0022', 'title': 'Geology', 'father': '002'}
+
+,{ 'name': '011', 'title': 'Biology', 'father': '01', 'icon':'biology.png'}
+,{ 'name': '012', 'title': 'Zoology', 'father': '01'}
+,{ 'name': '013', 'title': 'Botany', 'father': '01', 'icon':'botany.png'}
+
+// Social Sciences
+,{ 'name': '10', 'title': 'Anthropology', 'father': '1', 'icon':'anthropology.png'}
+,{ 'name': '11', 'title': 'Archaeology', 'father': '1'}
+,{ 'name': '12', 'title': 'Psychology', 'father': '1', 'icon':'psychology.png'}
+
+        
+// Formal Sciences        
+,{ 'name': '20', 'title': 'Logic', 'father': '2', 'icon':'logic.png'}
+,{ 'name': '21', 'title': 'Mathematics', 'father': '2', 'icon':'mathematics.png'}
+,{ 'name': '22', 'title': 'Computer', 'father': '2'}
+
+];
+    
+    //// Code to turn data into hierarchical JSON format ////
+    var dataMap = data.reduce(function(map, node) {
+        map[node.name] = node;
+        return map;
+    }, {});
+
+    // create the tree array
+    var data2 = [];
+    data.forEach(function(node) {
+        // add to parent
+        var father = dataMap[node.father];
+        if (father) {
+            // create child array if it doesn't exist
+            (father.children || (father.children = []))
+                // add node to child array
+                .push(node);
+        } else {
+            // parent is null or missing
+            data2.push(node);
+        }
+    });
+
+    return data2[0];
+
+};
+
+
+
+
+
+
+
+</script>
+</body>
+</html>
